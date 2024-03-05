@@ -1,0 +1,12 @@
+numpy
+pandas
+matplotlib
+IPython
+torch
+sklearn
+jupyter
+notebook
+tensorflow
+tensorflow_probability
+re
+rpy2
