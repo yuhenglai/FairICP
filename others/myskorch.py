@@ -1,4 +1,4 @@
-
+# Code copied from "https://github.com/socialfoundations/error-parity/blob/supp-materials/scripts/utils/wrappers/skorch.py"
 import random
 from typing import Callable
 
