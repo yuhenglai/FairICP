@@ -26,35 +26,6 @@ class PandasDataSet(TensorDataset):
             df = df.to_frame('dummy')
         return torch.from_numpy(df.values).float()
 
-
-def pretrain_adversary_fast_loader(dis, model, x, y, a, at, optimizer, criterion, lambdas):
-    yhat = model(x).detach()
-    dis.zero_grad()
-    if len(yhat.size())==1:
-        yhat = yhat.unsqueeze(dim=1)
-    real = torch.cat((yhat,at,y),1)
-    fake = torch.cat((yhat,a,y),1)
-    in_dis = torch.cat((real, fake), 0)
-    out_dis = dis(in_dis)
-    labels = torch.cat((torch.ones(real.shape[0],1), torch.zeros(fake.shape[0],1)), 0)
-    loss = (criterion(out_dis, labels) * lambdas).mean()
-    loss.backward()
-    optimizer.step()
-    return dis
-
-def pretrain_adversary(dis, model, data_loader, optimizer, criterion, lambdas):
-    for x, y, a, at in data_loader:
-        dis = pretrain_adversary_fast_loader(dis,
-                                             model,
-                                             x,
-                                             y,
-                                             a,
-                                             at,
-                                             optimizer,
-                                             criterion,
-                                             lambdas)
-    return dis
-
 ##############################################################
 ##################### Classification Part ####################
 ##############################################################
@@ -101,7 +72,6 @@ def train_classifier(model, dis, data_loader, pred_loss, dis_loss,
             clf_loss.backward()
             clf_optimizer.step()
 
-            break
 
     return model, dis
 
@@ -333,13 +303,14 @@ class EquiRegLearner:
         
 
 
-    def fit(self, X, Y, epochs_list = []):
+    def fit(self, X, Y, epochs_list = [], specified_At = None):
         X_train = pd.DataFrame(data=X[:,self.A_shape:])
         y_train = pd.DataFrame(data=Y)
         orig_Z = X[:,0:self.A_shape]
         Z_train = pd.DataFrame(data=orig_Z)
 
-        log_lik_mat = utility_functions.MAF_density_estimation(Y, orig_Z, Y, orig_Z)
+        if specified_At == None:
+            log_lik_mat = utility_functions.MAF_density_estimation(Y, orig_Z, Y, orig_Z) 
 
         if self.use_standardscaler:
             self.scaler_x.fit(X_train)
@@ -356,9 +327,12 @@ class EquiRegLearner:
         self.cp_model_list = []
         self.cp_dis_list = []
 
-        y_perm_index = np.squeeze(utility_functions.generate_X_CPT(50,self.epochs,log_lik_mat))
-        Z_perm_index = np.argsort(y_perm_index)
-        Z_tilde_list = orig_Z[Z_perm_index]
+        if specified_At == None:
+            y_perm_index = np.squeeze(utility_functions.generate_X_CPT(50,self.epochs,log_lik_mat))
+            Z_perm_index = np.argsort(y_perm_index)
+            Z_tilde_list = orig_Z[Z_perm_index]
+        else:
+            Z_tilde_list = specified_At
         for epoch in range(1, self.epochs + 1):
             # print(epoch, ": start")
             Z_tilde = Z_tilde_list[epoch - 1]
