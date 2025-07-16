@@ -10,3 +10,4 @@ tensorflow
 tensorflow_probability
 re
 rpy2
+itertools

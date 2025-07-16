@@ -1,0 +1,7 @@
+name: continuous-fairness
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - python=3.5
+  - pytorch
